@@ -754,8 +754,6 @@ TxCmdState LD2410Sschedule::check_state() {
       break;
 
     case TxCmdState::SENT:
-      // ESPHome 2026 workaround:
-      // do not wait for confirmation, do not retry/restart
       this->active_++;
       if (this->active_ >= this->last_) {
         this->state_ = TxCmdState::EMPTY;
