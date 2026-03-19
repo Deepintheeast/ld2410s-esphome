@@ -779,17 +779,28 @@ TxCmdState LD2410Sschedule::check_state() {
 }
 
 
-
-
 void LD2410Sschedule::verify_response(uint16_t command_word) {
-  ESP_LOGW(TAG, "Ignoring response verification: %04x", command_word);
+  // nur echte LD2410S-Bestätigungen akzeptieren
+  switch (command_word) {
+    case (CONFIG_MODE_START_CMD | CMD_CONFIRMATION):
+    case (CONFIG_MODE_END_CMD | CMD_CONFIRMATION):
+    case (CALIBRATION_CMD | CMD_CONFIRMATION):
+    case (CFG_PARAMS_WRITE_CMD | CMD_CONFIRMATION):
+    case (OUTPUT_MODE_SWITCH_CMD | CMD_CONFIRMATION):
+    case (CFG_PARAMS_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_FW_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_TRIGGER_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_HOLD_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_SNR_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_TRIGGER_WRITE_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_HOLD_WRITE_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_SNR_WRITE_CMD | CMD_CONFIRMATION):
+      ESP_LOGD(TAG, "Accepted response: %04x", command_word);
+      break;
 
-  this->active_++;
-  this->state_ = TxCmdState::SCHEDULED;
-
-  if (this->active_ >= TX_SCHEDULE_BUFFER_SIZE) {
-    ESP_LOGW(TAG, "Schedule overflow -> reset");
-    this->reset();
+    default:
+      ESP_LOGW(TAG, "Ignored invalid response: %04x", command_word);
+      return;
   }
 }
 
