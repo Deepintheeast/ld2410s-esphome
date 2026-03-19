@@ -804,8 +804,19 @@ void LD2410Sschedule::confirm_sent() {
   }
 }
 
-uint16_t LD2410Sschedule::get_command() { return this->commands_[this->active_].command; }
-uint16_t LD2410Sschedule::get_sub_command() { return this->commands_[this->active_].sub_command; }
+uint16_t LD2410Sschedule::get_command() {
+  if (this->active_ >= this->last_ || this->last_ == 0) {
+    return CONFIG_MODE_END_CMD;
+  }
+  return this->commands_[this->active_].command;
+}
+
+uint16_t LD2410Sschedule::get_sub_command() {
+  if (this->active_ >= this->last_ || this->last_ == 0) {
+    return NO_SUB_CMD;
+  }
+  return this->commands_[this->active_].sub_command;
+}
 
 // Сбрасывает буфер передачи
 void LD2410Sschedule::reset() {
