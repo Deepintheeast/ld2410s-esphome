@@ -510,7 +510,7 @@ RxEvaluationResult LD2410Srx::receive_byte(uint32_t loop_count, uint8_t byte) {
 
     case RxEvaluationResult::UNKNOWN:                   // Если кадр полностью не принят
       this->end_pos_++;                                 // увеличиваем позицию в буфере на следующий байт
-      if (this->end_pos_ > RX_TX_BUFFER_SIZE) {         // Если буфер приема заполнен
+      if (this->end_pos_ >= RX_TX_BUFFER_SIZE) {        // Если буфер приема заполнен
         ESP_LOGE(TAG, "XX< [%d] Received data buffer overflow, resetting", loop_count); 
         this->reset_();                                 // делаем полный сброс буфера пиема и готовим его к новому кадру
       }
