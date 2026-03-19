@@ -758,21 +758,26 @@ void LD2410Sschedule::append(uint16_t command, uint16_t sub_command) {
 TxCmdState LD2410Sschedule::check_state() {
   switch (this->state_) {
     case TxCmdState::SCHEDULED:
+      // nichts senden, wenn active_ außerhalb der Queue liegt
+      if (this->last_ == 0 || this->active_ >= this->last_) {
+        this->reset();
+        return this->state_;
+      }
       this->schedule_();
       break;
 
     case TxCmdState::SENT:
+      // fire-and-forget: zum nächsten Eintrag
       this->active_++;
-      if (this->active_ >= this->last_) {
-        this->state_ = TxCmdState::EMPTY;
+
+      if (this->last_ == 0 || this->active_ >= this->last_) {
+        this->reset();
       } else {
         this->state_ = TxCmdState::SCHEDULED;
       }
       break;
 
     case TxCmdState::EMPTY:
-      if (!this->check_append_config_end_())
-        this->check_clear_();
       break;
 
     case TxCmdState::SEND:
@@ -783,7 +788,6 @@ TxCmdState LD2410Sschedule::check_state() {
 
   return this->state_;
 }
-
 
 void LD2410Sschedule::verify_response(uint16_t command_word) {
   ESP_LOGD(TAG, "Accepted response: %04x", command_word);
