@@ -23,11 +23,6 @@ void LD2410S::setup() {
 }
 
 void LD2410S::loop() {
-  if (!this->init_done_) {
-    this->status_set_warning();
-  } else {
-    this->status_clear_warning();
-  }
   if (!this->receive_()) {
     if (!this->pause_tx_) {
       this->send_();
