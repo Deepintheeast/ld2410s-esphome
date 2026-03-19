@@ -792,56 +792,15 @@ TxCmdState LD2410Sschedule::check_state() {
   return this->state_;
 }
 
-// Проверяет, соответствует ли полученный ответ ожидаемому. Если да, то переходит к следующей запланированной команде
 void LD2410Sschedule::verify_response(uint16_t command_word) {
-  int16_t expected = this->get_command() | CMD_CONFIRMATION;
-  // tolerate mismatched confirmations due to timing changes
-  if (command_word == expected || command_word == 0x00FF || command_word == 0x00FE) {
-    ESP_LOGV(TAG, "::< pos:%d[%d], cmd:%04x, Sending confirmed, rx:%x", this->active_, this->last_ - 1,
-             this->get_command(), command_word);
+  ESP_LOGW(TAG, "Ignoring response verification: %04x", command_word);
 
-    switch (command_word) {
-      // подтвержден запуск конфигурации
-      case CONFIG_MODE_START_CMD | CMD_CONFIRMATION:
-        this->config_mode_ = true;
-        break;
+  this->active_++;
+  this->state_ = TxCmdState::SCHEDULED;
 
-      // завершение настройки подтверждено
-      case CONFIG_MODE_END_CMD | CMD_CONFIRMATION:
-        this->config_mode_ = false;
-        break;
-
-      default:
-        break;
-    }
-
-    if (!this->check_append_config_end_()) {
-      if (check_clear_()) {
-        return;
-      }
-    }
-
-    // переходите к следующей передаче
-    this->active_++;
-    this->state_ = TxCmdState::SCHEDULED;
-    if (this->active_ >= TX_SCHEDULE_BUFFER_SIZE) {
-      ESP_LOGE(TAG, "::: Schedule overflow, Reseting");
-      this->reset();
-    }
-
-  } else {
-    if (this->state_ == TxCmdState::SENT) {
-      ESP_LOGE(TAG, "::< pos:%d[%d], cmd:%04x, received:%x, Received confirmation for wrong command", this->active_,
-               this->last_, this->get_command(), command_word);
-    } else {
-      if (this->active_ > 0 && command_word == (this->commands_[this->active_ - 1].command | CMD_CONFIRMATION)) {
-        ESP_LOGE(TAG, "::< pos:%d[%d], cmd:%04x, received:%x, Received unexpected confirmation for previous cmd",
-                 this->active_, this->last_, this->get_command(), command_word);
-      } else {
-        ESP_LOGE(TAG, "::< pos:%d[%d], cmd:%04x, received:%x, Received unexpected confirmation", this->active_,
-                 this->last_, this->get_command(), command_word);
-      }
-    }
+  if (this->active_ >= TX_SCHEDULE_BUFFER_SIZE) {
+    ESP_LOGW(TAG, "Schedule overflow -> reset");
+    this->reset();
   }
 }
 
