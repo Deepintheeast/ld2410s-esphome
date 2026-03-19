@@ -302,8 +302,8 @@ bool LD2410S::receive_() {
 
     if (result == RxEvaluationResult::OK) {
       this->parse_();
-      this->rx_.reset_();   // ganz wichtig: Frame danach hart freigeben
-      break;                // pro loop nur einen Frame verarbeiten
+      this->rx_.force_reset();
+      break;
     }
   }
 
