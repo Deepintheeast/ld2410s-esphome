@@ -412,33 +412,33 @@ void LD2410S::parse_data_frame_() {
 void LD2410S::parse_cmd_frame_() {
   uint8_t *data_start = this->rx_.payload_data();
   uint16_t read_position = 0;
-  uint16_t command_word = 0;
-  uint16_t ack = 0;
-  
-  // --- FIX: frame sanity ---
+
+  // --- HARD FIX: ignore broken frames ---
   if (this->rx_.payload_size() < 4) {
     ESP_LOGW(TAG, "Ignored short CMD frame");
     return;
   }
-  
+
+  uint16_t command_word = 0;
+  uint16_t ack = 0;
+
   read_seq_data(data_start, read_position, &command_word);
   read_seq_data(data_start, read_position, &ack);
-  
-  // --- FIX: ignore broken frames ---
+
+  // --- HARD FIX: drop garbage ---
   if (command_word == 0x0000) {
-    ESP_LOGW(TAG, "Ignored invalid command: 0000");
+    ESP_LOGW(TAG, "Dropped garbage frame (cmd=0000)");
     return;
   }
 
-  ESP_LOGD(TAG, "<   [%d] %04x cmd < %s", this->loop_count_, command_word,
-           format_hex_pretty(this->rx_.frame_data(), this->rx_.frame_size() + 1, ' ').c_str());
+  ESP_LOGD(TAG, "< CMD %04x", command_word);
 
+  // Scheduler trotzdem weiterlaufen lassen
   this->tx_schedule_.verify_response(command_word);
 
   uint8_t *data = &data_start[read_position];
 
   switch (command_word) {
-    // Подтверждения процесса
 
 #ifdef LD2410S_V2
 
@@ -454,8 +454,6 @@ void LD2410S::parse_cmd_frame_() {
       ESP_LOGI(TAG, "Calibration started");
       break;
 
-      // Запись подтверждений команд
-
     case CFG_PARAMS_WRITE_CMD | CMD_CONFIRMATION:
       ESP_LOGI(TAG, "Config written");
       break;
@@ -463,20 +461,6 @@ void LD2410S::parse_cmd_frame_() {
     case OUTPUT_MODE_SWITCH_CMD | CMD_CONFIRMATION:
       this->parse_ack_minimal_output_(data);
       break;
-
-    case CFG_GATE_THRESHOLD_TRIGGER_WRITE_CMD | CMD_CONFIRMATION:
-      ESP_LOGI(TAG, "Trigger Threshold written");
-      break;
-
-    case CFG_GATE_THRESHOLD_HOLD_WRITE_CMD | CMD_CONFIRMATION:
-      ESP_LOGI(TAG, "Trigger Hold written");
-      break;
-
-    case CFG_GATE_THRESHOLD_SNR_WRITE_CMD | CMD_CONFIRMATION:
-      ESP_LOGI(TAG, "Trigger SNR written");
-      break;
-
-      // Чтение подтверждений команд
 
     case CFG_PARAMS_READ_CMD | CMD_CONFIRMATION:
       this->parse_ack_config_read_(data);
@@ -486,21 +470,10 @@ void LD2410S::parse_cmd_frame_() {
       this->parse_ack_fw_read_(data);
       break;
 
-    case CFG_GATE_THRESHOLD_TRIGGER_READ_CMD | CMD_CONFIRMATION:
-      this->parse_ack_threshold_trigger_read_(data);
-      break;
-
-    case CFG_GATE_THRESHOLD_HOLD_READ_CMD | CMD_CONFIRMATION:
-      this->parse_ack_threshold_hold_read_(data);
-      break;
-
-    case CFG_GATE_THRESHOLD_SNR_READ_CMD | CMD_CONFIRMATION:
-      this->parse_ack_threshold_snr_read_(data);
-      break;
 #endif
 
     default:
-      ESP_LOGE(TAG, "< Unknown: %4x", command_word);
+      // bewusst still
       break;
   }
 }
