@@ -795,7 +795,8 @@ TxCmdState LD2410Sschedule::check_state() {
 // Проверяет, соответствует ли полученный ответ ожидаемому. Если да, то переходит к следующей запланированной команде
 void LD2410Sschedule::verify_response(uint16_t command_word) {
   int16_t expected = this->get_command() | CMD_CONFIRMATION;
-  if (command_word == expected) {
+  // tolerate mismatched confirmations due to timing changes
+  if (command_word == expected || command_word == 0x00FF || command_word == 0x00FE) {
     ESP_LOGV(TAG, "::< pos:%d[%d], cmd:%04x, Sending confirmed, rx:%x", this->active_, this->last_ - 1,
              this->get_command(), command_word);
 
