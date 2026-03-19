@@ -288,28 +288,25 @@ void LD2410S::sending_pause_() {
   });
 }
 
-// получает кадры и начинает обработку
 bool LD2410S::receive_() {
-  //uint8_t rx;
   int rx_bytes_count = 0;
 
-  while (this->available() && rx_bytes_count < RX_MAX_BYTES_PER_LOOP) {
+  while (this->available() && rx_bytes_count < 64) {
     int rx = this->read();
     if (rx < 0)
       break;
-    
-    // --- FIX: ignore garbage ---
-    if (rx == 0x00) {
-      continue;
-    }
-    
-    //ESP_LOGD(TAG, "<XX Reseive byte [%d] = [%2x]", rx_bytes_count,  rx);
+
     rx_bytes_count++;
+
     RxEvaluationResult result = this->rx_.receive_byte(this->loop_count_, rx);
+
     if (result == RxEvaluationResult::OK) {
       this->parse_();
+      this->rx_.reset_();   // ganz wichtig: Frame danach hart freigeben
+      break;                // pro loop nur einen Frame verarbeiten
     }
   }
+
   return rx_bytes_count > 0;
 }
 
