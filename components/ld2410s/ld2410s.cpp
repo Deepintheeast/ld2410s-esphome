@@ -409,9 +409,21 @@ void LD2410S::parse_cmd_frame_() {
   uint16_t read_position = 0;
   uint16_t command_word = 0;
   uint16_t ack = 0;
-
+  
+  // --- FIX: frame sanity ---
+  if (this->rx_.payload_size() < 4) {
+    ESP_LOGW(TAG, "Ignored short CMD frame");
+    return;
+  }
+  
   read_seq_data(data_start, read_position, &command_word);
   read_seq_data(data_start, read_position, &ack);
+  
+  // --- FIX: ignore broken frames ---
+  if (command_word == 0x0000) {
+    ESP_LOGW(TAG, "Ignored invalid command: 0000");
+    return;
+  }
 
   if (ack == 0x0000) {
     ESP_LOGI(TAG, "<   [%d] %04x cmd < %s", this->loop_count_, command_word,
