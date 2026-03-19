@@ -156,6 +156,8 @@ class LD2410Srx {
   uint8_t payload_size() const { return this->payload_size_; }
   bool payload_ready() const { return payload_ready_; }
 
+  void force_reset() { this->reset_(); }
+
  protected:
   uint8_t rcv_buffer_[RX_TX_BUFFER_SIZE];
   uint16_t end_pos_{0};
@@ -177,7 +179,6 @@ class LD2410Srx {
   void reset_();
   static int read_int(const uint8_t *buffer, size_t pos, size_t len);
 };
-
 class LD2410Sschedule {
  public:
   void append(uint16_t command, uint16_t sub_command = NO_SUB_CMD);
