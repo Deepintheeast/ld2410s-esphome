@@ -401,31 +401,42 @@ void LD2410S::parse_data_frame_() {
   }
 }
 
+
 void LD2410S::parse_cmd_frame_() {
   uint8_t *data_start = this->rx_.payload_data();
   uint16_t read_position = 0;
 
   if (this->rx_.payload_size() < 2) {
-    ESP_LOGW(TAG, "Ignored too-short CMD frame");
     return;
   }
 
   uint16_t command_word = 0;
-  uint16_t ack = 0xFFFF;
-
   read_seq_data(data_start, read_position, &command_word);
 
-  // ACK nur lesen, wenn genug Daten da sind
-  if (this->rx_.payload_size() >= 4) {
-    read_seq_data(data_start, read_position, &ack);
+  // nur bekannte Response-Codes akzeptieren
+  switch (command_word) {
+#ifdef LD2410S_V2
+    case (CONFIG_MODE_START_CMD | CMD_CONFIRMATION):
+    case (CONFIG_MODE_END_CMD | CMD_CONFIRMATION):
+    case (CALIBRATION_CMD | CMD_CONFIRMATION):
+    case (CFG_PARAMS_WRITE_CMD | CMD_CONFIRMATION):
+    case (OUTPUT_MODE_SWITCH_CMD | CMD_CONFIRMATION):
+    case (CFG_PARAMS_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_FW_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_TRIGGER_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_HOLD_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_SNR_READ_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_TRIGGER_WRITE_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_HOLD_WRITE_CMD | CMD_CONFIRMATION):
+    case (CFG_GATE_THRESHOLD_SNR_WRITE_CMD | CMD_CONFIRMATION):
+      break;
+#endif
+    default:
+      // alles andere ist Müll / Fehlalignment
+      return;
   }
 
-  if (command_word == 0x0000) {
-    ESP_LOGD(TAG, "Dropped cmd=0000 frame");
-    return;
-  }
-
-  ESP_LOGD(TAG, "< CMD %04x ack=%04x", command_word, ack);
+  ESP_LOGD(TAG, "< valid CMD %04x", command_word);
 
   this->tx_schedule_.verify_response(command_word);
 
@@ -473,14 +484,11 @@ void LD2410S::parse_cmd_frame_() {
       this->parse_ack_threshold_snr_read_(data);
       break;
 #endif
+
     default:
       break;
   }
 }
-
-
-
-
 
 
 
