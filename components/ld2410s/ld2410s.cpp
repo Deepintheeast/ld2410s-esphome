@@ -425,13 +425,8 @@ void LD2410S::parse_cmd_frame_() {
     return;
   }
 
-  if (ack == 0x0000) {
-    ESP_LOGI(TAG, "<   [%d] %04x cmd < %s", this->loop_count_, command_word,
-             format_hex_pretty(this->rx_.frame_data(), this->rx_.frame_size() + 1, ' ').c_str());
-  } else {
-    ESP_LOGE(TAG, "<XX [%d] %04x cmd Failed ack:%04x < %s", this->loop_count_, command_word, ack,
-             format_hex_pretty(this->rx_.frame_data(), this->rx_.frame_size() + 1, ' ').c_str());
-  }
+  ESP_LOGD(TAG, "<   [%d] %04x cmd < %s", this->loop_count_, command_word,
+           format_hex_pretty(this->rx_.frame_data(), this->rx_.frame_size() + 1, ' ').c_str());
 
   this->tx_schedule_.verify_response(command_word);
 
