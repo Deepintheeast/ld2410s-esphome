@@ -753,7 +753,6 @@ void LD2410Sschedule::append(uint16_t command, uint16_t sub_command) {
   this->last_++;
 }
 
-// Возвращает статус активной запланированной передачи
 TxCmdState LD2410Sschedule::check_state() {
   switch (this->state_) {
     case TxCmdState::SCHEDULED:
@@ -761,34 +760,32 @@ TxCmdState LD2410Sschedule::check_state() {
       break;
 
     case TxCmdState::SENT:
-      if (App.get_loop_component_start_time() > this->time_started_ + TX_CONFIRMATION_TIMEOUT) {
-        if (this->retry_count_ < TX_MAX_RESEND) {
-          this->resend_();
-
-        } else {
-          if (this->restart_count_ < TX_MAX_RESTART) {
-            this->restart_();
-          } else {
-            this->give_up_();
-          }
-        }
+      // ESPHome 2026 workaround:
+      // do not wait for confirmation, do not retry/restart
+      this->active_++;
+      if (this->active_ >= this->last_) {
+        this->state_ = TxCmdState::EMPTY;
+      } else {
+        this->state_ = TxCmdState::SCHEDULED;
       }
       break;
 
     case TxCmdState::EMPTY:
-
-      // передача подошла к концу
       if (!this->check_append_config_end_())
         this->check_clear_();
       break;
 
     case TxCmdState::SEND:
+    case TxCmdState::ERROR:
     default:
       break;
   }
 
   return this->state_;
 }
+
+
+
 
 void LD2410Sschedule::verify_response(uint16_t command_word) {
   ESP_LOGW(TAG, "Ignoring response verification: %04x", command_word);
